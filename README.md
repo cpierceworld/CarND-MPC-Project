@@ -3,6 +3,40 @@ Self-Driving Car Engineer Nanodegree Program
 
 ---
 
+[//]: # (Image References)
+[image1]: ./carmodeldiag.png "Model Diagram"
+[image2]: ./StateTransnEqns.png "State Transistion Eqs"
+
+## Introduction
+This repository contains my solution to the Udacity Self Driving Car Nanodgree "Model Predictive Control" (MPC) Project. The goal of this project is to control a simulated car driving around a track in a virtual environment.  The simulator sends the current state of the car (position, orientation, velocity) along with a set of desired "way points" for the car to follow.   The MPC controller reports back Steering and Throttle actuator values to control the car such that it's trajectory follows the desired path.  There is also latency in the simulator to mimic the fact that, in the real world, control inputs are not executed immediatly, so the solution has to be able to handle latency in the system.
+
+### The Model
+The kinematic model uses the car's x, y position, orientation angle (psi), velocity (v), cross track error (cte) and orientation error (psi error). Actuator outputs are acceleration and steering angle (delta).
+
+![alt text][image1]
+
+The state transistion from one timestamp to the next is given by the following equations:
+
+![alt text][image2]
+
+### Timestep Length and Elapsed Duration (N & dt)
+The final Timestep Length and Elapsed Duration where 10 and 0.1 seconds respectively.   This combination plans a path 1 second into the future which was adequate for the MPC to perform well.  Raising N seems to cause eratic behavior in some cases (around bends, the order 3 polynomial occationally planed a path in the worng direction) and caused unecessarily slow computation of the polynomial.  Lowering N also caused the eratic behavior such as excessive car swerving.  Raising and lower dt has similar effects.  I also wanted dt to be around the same magnitude as the "latency" so we could map latency time to a number of time steps.
+
+Other values tried include 20 / 0.05,  10 / 0.5, 50/ 0.02, and many others.
+
+### Polynomial Fitting and MPC Preprocessing
+The waypoints are converted to a car centric coordinate system.  This places the car at the origin and the car's orientation is 0 degrees.  This allows for the car's initial position/orientation state to be all zero.   These transformed waypoints are then used to fit a 3rd order polynomial which describes the "desired path".   Note that since the coordinate system now has the car at it's center, then the desired path becomes the cross track error itself without any further calculations.  The tangentiial angle is the the psi error.
+
+
+### Model Predictive Control with Latency
+Various tuning parameters can be found in MPC.cpp on lines 40 - 47.  These are multipliers for thier respective "cost" value to give more or less weight to each.   I found that the the cross track error and orientation (psi) error were be far the most important parameters which is why they are many orders of magnitude higher than the others.
+
+I found that, with low latency, I could set a very large paramter for velicity error (how far from the target velocity we are) and get the car to drive smoothly and almost always near the target velocity.  However, once latency was added back in, I found that the high speed caused many errors (driving off the road).  Lowering the parameter for velocity error made the model "more willing" to slow down and to deal with the latency.
+
+Also for latency, there is the "latency_steps" parameter which causes the MPC algorithm to assume that the latency before the actuator will actually do anything is that many time steps (and will thus use the actuators starting values for those time steps).
+
+---
+
 ## Dependencies
 
 * cmake >= 3.5
