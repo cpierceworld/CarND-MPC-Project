@@ -17,6 +17,9 @@ constexpr double pi() { return M_PI; }
 double deg2rad(double x) { return x * pi() / 180; }
 double rad2deg(double x) { return x * 180 / pi(); }
 
+// for determining latency
+//std::chrono::time_point<std::chrono::system_clock> prev_time = std::chrono::system_clock::now();
+
 // Checks if the SocketIO event has JSON data.
 // If there is data the JSON object in string format will be returned,
 // else the empty string "" will be returned.
@@ -92,19 +95,48 @@ int main() {
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
 
+          for(unsigned int i = 0; i < ptsx.size(); i++) {
+            // shift to car centered coordinate system
+            double shift_x = ptsx[i] - px;
+            double shift_y = ptsy[i] - py;
+
+            // rotate to car oriented coordinate system
+            ptsx[i] = (shift_x * cos(-psi) - shift_y * sin(-psi));
+            ptsy[i] = (shift_x * sin(-psi) + shift_y * cos(-psi));
+          }
+
+          Eigen::Map<Eigen::VectorXd> ptsx_transform(&ptsx[0], 6);
+          Eigen::Map<Eigen::VectorXd> ptsy_transform(&ptsy[0], 6);
+
+          auto coeffs = polyfit(ptsx_transform, ptsy_transform, 3);
+
+          // Because we converted to car centered/oriented coordinates,
+          // the waypoint path IS the cross track error and the
+          // orientation of the waypoint path IS the orientation error.
+          double cte = polyeval(coeffs, 0);
+          double epsi = -atan(coeffs[1]);
+
+
+          // The initial state's x, y, phi are all zero because we
+          // converted to car centered/oriented coordinates.
+          Eigen::VectorXd state(6);
+          state << 0, 0, 0, v, cte, epsi;
+
           /*
           * TODO: Calculate steering angle and throttle using MPC.
           *
           * Both are in between [-1, 1].
           *
           */
-          double steer_value;
-          double throttle_value;
+          auto vars = mpc.Solve(state, coeffs);
+
+          double steer_value = vars[0];
+          double throttle_value = vars[1];
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
           // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
-          msgJson["steering_angle"] = steer_value;
+          msgJson["steering_angle"] = steer_value / deg2rad(25);
           msgJson["throttle"] = throttle_value;
 
           //Display the MPC predicted trajectory 
@@ -113,6 +145,15 @@ int main() {
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Green line
+
+          for (unsigned int i = 2; i < vars.size(); i ++) {
+            if (i%2 == 0) {
+              mpc_x_vals.push_back(vars[i]);
+            }
+            else {
+              mpc_y_vals.push_back(vars[i]);
+            }
+          }
 
           msgJson["mpc_x"] = mpc_x_vals;
           msgJson["mpc_y"] = mpc_y_vals;
@@ -124,12 +165,17 @@ int main() {
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Yellow line
 
+          for (double i = 0; i < 100; i += 3){
+            next_x_vals.push_back(i);
+            next_y_vals.push_back(polyeval(coeffs, i));
+          }
+
           msgJson["next_x"] = next_x_vals;
           msgJson["next_y"] = next_y_vals;
 
 
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
-          std::cout << msg << std::endl;
+          //std::cout << msg << std::endl;
           // Latency
           // The purpose is to mimic real driving conditions where
           // the car does actuate the commands instantly.
@@ -140,6 +186,12 @@ int main() {
           // NOTE: REMEMBER TO SET THIS TO 100 MILLISECONDS BEFORE
           // SUBMITTING.
           this_thread::sleep_for(chrono::milliseconds(100));
+
+//          std::chrono::time_point<std::chrono::system_clock> curr_time = std::chrono::system_clock::now();
+//          std::chrono::duration<double> elapsed_seconds = curr_time-prev_time;
+//          prev_time = curr_time;
+//          std::cout << "latency: " << elapsed_seconds.count() << "s" << std::endl;
+
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }
       } else {
