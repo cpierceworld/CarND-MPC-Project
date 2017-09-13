@@ -18,7 +18,7 @@ double deg2rad(double x) { return x * pi() / 180; }
 double rad2deg(double x) { return x * 180 / pi(); }
 
 // for determining latency
-//std::chrono::time_point<std::chrono::system_clock> prev_time = std::chrono::system_clock::now();
+std::chrono::time_point<std::chrono::system_clock> prev_time = std::chrono::system_clock::now();
 
 // Checks if the SocketIO event has JSON data.
 // If there is data the JSON object in string format will be returned,
@@ -187,10 +187,10 @@ int main() {
           // SUBMITTING.
           this_thread::sleep_for(chrono::milliseconds(100));
 
-//          std::chrono::time_point<std::chrono::system_clock> curr_time = std::chrono::system_clock::now();
-//          std::chrono::duration<double> elapsed_seconds = curr_time-prev_time;
-//          prev_time = curr_time;
-//          std::cout << "latency: " << elapsed_seconds.count() << "s" << std::endl;
+          std::chrono::time_point<std::chrono::system_clock> curr_time = std::chrono::system_clock::now();
+          std::chrono::duration<double> elapsed_seconds = curr_time-prev_time;
+          prev_time = curr_time;
+          std::cout << "actual latency: " << elapsed_seconds.count() << "s" << std::endl;
 
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }

@@ -23,7 +23,7 @@ double dt = 0.1;
 const double Lf = 2.67;
 
 // target velocity
-double ref_v = 60;
+double ref_v = 50;
 
 // The solver takes all the state variables and actuator
 // variables in a singular vector. Thus, we should to establish
@@ -39,12 +39,12 @@ size_t a_start = delta_start + N - 1;
 
 double cost_mult_cte_error = 3200;
 double cost_mult_psi_error = 2600;
-double cost_mult_velocity_error = 25;
+double cost_mult_velocity_error = 10;
 double cost_mult_steering_actuator = 5;
-double cost_mult_throttle_actuator = 5;
-double cost_mult_steering_delta = 300;
-double cost_mult_throttle_delta = 30;
-double latency_steps = 1;
+double cost_mult_throttle_actuator = 2;
+double cost_mult_steering_delta = 1200;
+double cost_mult_throttle_delta = 20;
+double latency_steps = 3;
 
 class FG_eval {
  public:
@@ -128,11 +128,11 @@ class FG_eval {
     	  // assume no change actuator settings for first
     	  // latency_step number of time frames.
     	  delta0 = vars[delta_start];
-    	  a0= vars[a_start];
+    	  a0 = vars[a_start];
       }
       else if (t > latency_steps) {
-          delta0 = vars[delta_start + t - latency_steps];
-          a0= vars[a_start + t - latency_steps];
+          delta0 = vars[delta_start + t - (latency_steps + 1)];
+          a0 = vars[a_start + t - (latency_steps + 1)];
       }
 
       // polynomial: "c0 + c1*x + c2*x^2 + c3*x^3"
@@ -268,7 +268,7 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   options += "Sparse  true        reverse\n";
   // NOTE: Currently the solver has a maximum time limit of 0.5 seconds.
   // Change this as you see fit.
-  options += "Numeric max_cpu_time          0.5\n";
+  options += "Numeric max_cpu_time          0.50\n";
 
   // place to return solution
   CppAD::ipopt::solve_result<Dvector> solution;
