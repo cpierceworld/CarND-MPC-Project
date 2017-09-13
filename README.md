@@ -20,7 +20,11 @@ The state transistion from one timestamp to the next is given by the following e
 ![alt text][image2]
 
 ### Timestep Length and Elapsed Duration (N & dt)
-The final Timestep Length and Elapsed Duration where 10 and 0.1 seconds respectively.   This combination plans a path 1 second into the future which was adequate for the MPC to perform well.  Raising N seems to cause eratic behavior in some cases (around bends, the order 3 polynomial occationally planed a path in the worng direction) and caused unecessarily slow computation of the polynomial.  Lowering N also caused the eratic behavior such as excessive car swerving.  Raising and lower dt has similar effects.  I also wanted dt to be around the same magnitude as the "latency" so we could map latency time to a number of time steps.
+The Timestep Length (N) and Elapsed Duration (dt) control far the planned path extends into the future (and distance ahead of the car).   N is the number of sample points to generate for the planned path, while dt is how much time passes between those points.  
+
+Having a larger N plans a path further into the future and so should allow to travel at a faster speed, but a larger N requires more computation time to fit the polynomial (which adds more latency or, with computation time capped, can lead to a badly fit polynomial).  Having a smaller dt leads to finer resolution (smoother curve) however that leads to a planned path that doesn't extend far into the future requiring slower travel speed or a need to raise N which has the previously mentioned issues.
+
+The final Timestep Length and Elapsed Duration I used are 10 and 0.1 seconds respectively.   This combination plans a path 1 second into the future which was adequate for the MPC to perform well.  Raising N seems to cause eratic behavior because of slow computation of the polynomial, and the capped processing time leads to bad curves. Lowering N also caused the eratic behavior and raising and lower dt has similar effects.  I also wanted dt to be around the same magnitude as the "latency" so we could map latency time to a number of time steps.
 
 Other values tried include 20 / 0.05,  10 / 0.5, 50/ 0.02, and many others.
 
