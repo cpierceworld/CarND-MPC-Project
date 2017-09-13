@@ -39,7 +39,7 @@ Also for latency, there is the "latency_steps" parameter which causes the MPC al
 
 I am also printing out "Actual Latency" which is the time between sending actuator commands back tot he simulator.  I'm doing this because my development laptop is not that powerful and I and finding that even though we set a latency pause of only .1 seconds, the actual latency I'm seeing is closer .3 seconds.
 
-To deal with latency I could either bring the speed way down (like 20mph) as well as lower the N down to 6 and then I can use the expected .1s latency_step.   Alternativly I could just increase my latency_steps to match the "Actual Latency" (i.e. 3 latency steps) and then it works with 50mp and an N of 10.
+To deal with latency I could either bring the speed way down (like 20mph) as well as lower the N down to 6 and then I can use the expected .1s latency_step.   Alternativly I could just increase my latency_steps to match the "Actual Latency" (i.e. 3 latency steps) and then it works with 50mph and an N of 10.
 
 ---
 
